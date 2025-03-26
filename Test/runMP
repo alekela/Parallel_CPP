@@ -1,0 +1,5 @@
+#!/bin/bash
+
+NAME="test"
+g++ $NAME.cpp -o $NAME -fopenmp
+./$NAME

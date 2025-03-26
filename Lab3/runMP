@@ -1,0 +1,5 @@
+#!/bin/bash
+
+NAME="Lab3"
+g++ $NAME.cpp -o $NAME -fopenmp
+time ./$NAME 3 101 >> N_task.out
