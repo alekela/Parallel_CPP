@@ -4,6 +4,6 @@ name="Lab2"
 mpiCC $name.cpp -o $name
 for N in 2000 10000 50000; do
 	for p in {1..8}; do
-		mpirun -np $p ./$name $N >> out_n_${p}_size_${N}_p.out
+		mpirun -np $p ./$name $N >> res/out_n_${p}_size_${N}_p2.out
 	done
 done

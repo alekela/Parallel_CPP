@@ -2,4 +2,4 @@
 
 NAME="Lab2"
 mpiCC $NAME.cpp -o $NAME
-mpirun -np 3 $NAME 10000 >> out_n_3_size_10000.out
+mpirun -np 1 $NAME 50 >> out_n_1_size_50.out

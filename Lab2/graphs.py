@@ -2,18 +2,19 @@ import os
 from time import sleep
 import matplotlib.pyplot as plt
 
-sizes = [2000, 10000, 50000]
+sizes = [2000, 10000]
 Ns = list(range(1, 9))
 times = {}
 
 plt.figure()
 legend = ["ideal"] + [f"real N={size}" for size in sizes]
 plt.xlabel("N_proc")
-plt.ylabel("T/T0")
+plt.ylabel("T0/T")
 plt.plot(range(1, max(Ns) + 1), range(1, max(Ns) + 1))
-plt.title("Acceleration")
+plt.title("Speed up")
+plt.grid()
 
-option = '1'
+option = 'p2'
 
 for size in sizes:
 	times[size] = []
@@ -41,7 +42,7 @@ for size in sizes:
 		os.system("bash run")
 		sleep(15 * int(size / sizes[0]))
 		print(f"out_n_{n}_size_{size}.out done")"""
-		with open(f"out_n_{n}_size_{size}_{option}.out") as f:
+		with open(f"res/out_n_{n}_size_{size}_{option}.out") as f:
 			for line in f:
 				if "Time of working" in line:
 					times[size].append(float(line.split(":")[1]))
@@ -55,7 +56,7 @@ with open(f"Results_{option}.txt", 'w') as f:
 		f.write(f"N={size}\n")
 		f.write('\t'.join(map(str, Ns)) + '\n')
 		f.write('\t'.join(map(str, times[size])) + '\n\n')
-#plt.legend(legend)
+plt.legend(legend)
 plt.xlim(0, max(Ns))
 plt.ylim(0, max(Ns))
 plt.savefig(f"out_{option}.png")

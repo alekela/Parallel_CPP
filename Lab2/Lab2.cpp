@@ -1,7 +1,7 @@
 #include <iostream>
 #include <mpi.h>
 #include <vector>
-#include <cmath>
+#include <math.h>
 #include <fstream>
 
 
@@ -18,7 +18,7 @@ double analityc_solve(double k, double L, double u0, double t, double x, double 
 void solve(std::vector<double>* T, int size, double k, double h, double tau) {
 	std::vector<double> new_T(size - 2);
 	for (int i = 1; i < size - 1; i++) {
-		new_T[i - 1] = tau * k / h / h * ((*T)[i + 1] - 2 * (*T)[i] + (*T)[i - 1]) + (*T)[i];
+		new_T[i - 1] = tau * k / h / h * ((*T)[i + 1] - 2. * (*T)[i] + (*T)[i - 1]) + (*T)[i];
 	}
 	for (int i = 1; i < size - 1; i++) {
 		(*T)[i] = new_T[i - 1];
@@ -26,19 +26,20 @@ void solve(std::vector<double>* T, int size, double k, double h, double tau) {
 }
 
 
-void sending_p(std::vector<double>* T, int n, int rank, int size, MPI_Status* Status) {
+void sending_p(std::vector<double>* T, int n, int rank, int size, MPI_Status* Status, MPI_Request* Request) {
 	if (rank != size - 1) {
-		MPI_Send(&((*T)[n]), 1, MPI_DOUBLE, rank +1, rank +1, MPI_COMM_WORLD);
+		MPI_Isend(&((*T)[n]), 1, MPI_DOUBLE, rank +1, rank +1, MPI_COMM_WORLD, Request);
 	}
 	if (rank != 0) {
-		MPI_Recv(&((*T)[0]), 1, MPI_DOUBLE, rank -1, rank , MPI_COMM_WORLD, Status);
+		MPI_Irecv(&((*T)[0]), 1, MPI_DOUBLE, rank -1, rank , MPI_COMM_WORLD, Request);
 	}
 	if (rank != 0) {
-		MPI_Send(&((*T)[1]), 1, MPI_DOUBLE, rank -1, rank -1, MPI_COMM_WORLD);
+		MPI_Isend(&((*T)[1]), 1, MPI_DOUBLE, rank -1, rank -1, MPI_COMM_WORLD, Request);
 	}
 	if (rank != size - 1) {
-		MPI_Recv(&((*T)[n + 1]), 1, MPI_DOUBLE, rank +1, rank , MPI_COMM_WORLD, Status);
+		MPI_Irecv(&((*T)[n + 1]), 1, MPI_DOUBLE, rank +1, rank , MPI_COMM_WORLD, Request);
 	}
+	MPI_Wait(Request, Status);
 }
 
 
@@ -67,8 +68,8 @@ void sending_1(std::vector<double>* T, int n, int rank, int size, MPI_Status* St
 
 
 int main(int argc, char* argv[]) {
-	double xstart = 0;
-	double xend = 1;
+	double xstart = 0.;
+	double xend = 1.;
 	int N;
 	if (argc != 2) {
 		std::cerr << "error, no input N or too many inputs";
@@ -77,8 +78,9 @@ int main(int argc, char* argv[]) {
 		N = std::stoi(argv[1]);
 	}
 	double k = 1;
-	double tend = 0.0001;
-	double h = (xend - xstart) / N;
+	double tstart = 0;
+	double tend = 0.001;
+	double h = 1. / (N + 1);
 
 	double tau = 0.5 * h * h / k;
 	int Nt = (int) (tend / tau); 
@@ -89,6 +91,7 @@ int main(int argc, char* argv[]) {
 	double points[11] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7001, 0.8, 0.9, 1.};
 
 	MPI_Status Status;
+	MPI_Request Request;
 	int rank, size;
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -102,44 +105,24 @@ int main(int argc, char* argv[]) {
 		}
 		T0[0] = uleft;
 		T0[N + 1] = uright;
-		for (int i = 0; i < Nt; i++) {
+		while (tstart < tend) {
 			solve(&T0, N + 2, k, h, tau);
+			tstart += tau;
 		}
 		std::cout << "One proc time: " << MPI_Wtime() - onetime << "\n";
-		// saving analitic solution
-		/*
-    	std::ofstream outfile("T_analit(X).csv");
-    	std::string tmp;
-   		tmp = "Time,X,T_chisl,T_analit\n";
-   		outfile << tmp;
-		int index = 0;
-    	for (int i = 0; i < 11; i++) {
-       		tmp = "";
-        	tmp += std::to_string(tau*Nt) + ',';
-       		tmp += std::to_string(xstart + 0.1 * (i)) + ',';
-			index = points[i] / h;
-			if (i >= 5) {
-				index++;
-			}
-        	tmp += std::to_string(T0[index]) + ',';
-        	tmp += std::to_string(analityc_solve(k, xend - xstart, u0, tau*Nt, xstart + 0.1 * (i), 0.00001)) + '\n';
-       		outfile << tmp;
-    	}
-    	outfile.close();
-		*/
 		int index = 0;
 		std::cout << "T_chisl: ";
-    	for (int i = 0; i < 11; i++) {
+    		for (int i = 0; i < 11; i++) {
 			index = points[i] / h;
 			if (i >= 5) {
 				index++;
 			}
-        	std::cout << T0[index] << ',';
+        		std::cout << T0[index] << ',';
 		}
 		std::cout << "\nT_analit: ";
 		for (int i = 0; i < 11; i++) {
-        	std::cout << analityc_solve(k, xend - xstart, u0, tau*Nt, xstart + 0.1 * (i), 0.00001) << ',';
-    	}
+        		std::cout << analityc_solve(k, xend - xstart, u0, tau*Nt, xstart + 0.1 * (i), 0.00001) << ',';
+    		}
 		std::cout << '\n';
 	}
 
@@ -174,7 +157,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	// sync before starting to solve
-	MPI_Barrier(MPI_COMM_WORLD);
+	// MPI_Barrier(MPI_COMM_WORLD);
 	std::vector<double> T(stop - start + 2);
 	for (int i = 1; i < stop - start + 1; i++) {
 		T[i] = 1;
@@ -186,22 +169,24 @@ int main(int argc, char* argv[]) {
 		if (rank == size - 1) {
 			T[stop - start + 1] = uright;
 		}
-		sending_p(&T, stop - start, rank, size, &Status);
+		sending_1(&T, stop - start, rank, size, &Status);
 
 		solve(&T, stop - start + 2, k, h, tau);
 	}
 	int n = stop - start;
-	/*
+	
 	if (rank != 0) {
 		MPI_Send(&n, 1, MPI_INT, 0, rank + size, MPI_COMM_WORLD);
 		MPI_Send(&(T[1]), n + 1, MPI_DOUBLE, 0, rank, MPI_COMM_WORLD);
-	}*/
+	}
+	
 	if (rank == 0) {
 		std::cout << "Parallel results:" << std::endl;
-		/*int counter = 0;
+				
+		int counter = 0;
 		int ind_count = 0;
 		int indexes[11];
-    	for (int i = 0; i < 11; i++) {
+    		for (int i = 0; i < 11; i++) {
 			indexes[i] = i * N / 10;
 			if (i >= 5) {
 				indexes[i]++;
@@ -223,20 +208,22 @@ int main(int argc, char* argv[]) {
 		}
 		for (int i = 1; i < size; i++) {
 			MPI_Recv(&n, 1, MPI_INT, i, i + size, MPI_COMM_WORLD, &Status);
-			MPI_Recv(&(T[1]), n + 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &Status);
+			std::vector<double> T_temp(n + 2);
+			MPI_Recv(&(T_temp[1]), n + 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &Status);
 			for (int j = 1; j < n + 1 + (i == size - 1); j++) {
-				if (T[j] != T[j]) {
+				if (T_temp[j] != T_temp[j]) {
 					std::cout << "Nan detected!" << std::endl;
 					break;
 				}
 
 				if (counter == indexes[ind_count]) {
-					std::cout << T[j] << ',';
+					std::cout << T_temp[j] << ',';
 					ind_count++;
 				}
 				counter++;
 			}
-		}*/
+		}
+		
 		std::cout << "\nTime of working: " << MPI_Wtime() - manytime << "\n";
 	}
 	MPI_Finalize();
