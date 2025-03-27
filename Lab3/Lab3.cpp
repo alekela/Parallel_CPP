@@ -93,8 +93,8 @@ int main(int argc, char*argv[]) {
 		printf("Thread number %d: start: %d, stop: %d\n", rank, start, stop);
 
 		double fict_cell;
-		double t_start = 0;
-		while (t_start < t_end) {
+		int Nt = t_end / tau;
+		for (int i = 0; i < Nt; i++) {
 			if (rank == 0) {
 				fict_cell = 0;
 			}
@@ -103,7 +103,6 @@ int main(int argc, char*argv[]) {
 			}
 			#pragma omp barrier
 			solve(u, fict_cell, start, stop, c, h, tau);
-			t_start += tau;
 			#pragma omp barrier
 		}
 	}

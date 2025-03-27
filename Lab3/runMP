@@ -2,4 +2,4 @@
 
 NAME="Lab3"
 g++ $NAME.cpp -o $NAME -fopenmp
-time ./$NAME 3 101 >> N_task.out
+time ./$NAME 3 10001 >> N_task.out

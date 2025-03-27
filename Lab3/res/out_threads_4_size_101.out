@@ -1,7 +1,7 @@
 Thread number 0: start: 0, stop: 25
-Thread number 1: start: 25, stop: 50
-Thread number 2: start: 50, stop: 75
 Thread number 3: start: 75, stop: 101
+Thread number 2: start: 50, stop: 75
+Thread number 1: start: 25, stop: 50
 0	0	0
 0.1	0	0
 0.2	0	0
@@ -103,4 +103,4 @@ Thread number 3: start: 75, stop: 101
 9.8	0	0
 9.9	0	0
 10	0	0
-Time of working: 0.000581028
+Time of working: 0.000664107

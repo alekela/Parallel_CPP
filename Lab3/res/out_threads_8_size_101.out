@@ -1,11 +1,11 @@
-Thread number 4: start: 49, stop: 62
 Thread number 0: start: 0, stop: 12
-Thread number 7: start: 88, stop: 101
-Thread number 3: start: 36, stop: 49
-Thread number 6: start: 75, stop: 88
-Thread number 2: start: 24, stop: 36
 Thread number 1: start: 12, stop: 24
+Thread number 4: start: 49, stop: 62
+Thread number 2: start: 24, stop: 36
 Thread number 5: start: 62, stop: 75
+Thread number 6: start: 75, stop: 88
+Thread number 3: start: 36, stop: 49
+Thread number 7: start: 88, stop: 101
 0	0	0
 0.1	0	0
 0.2	0	0
@@ -107,4 +107,4 @@ Thread number 5: start: 62, stop: 75
 9.8	0	0
 9.9	0	0
 10	0	0
-Time of working: 0.000940195
+Time of working: 0.000872425

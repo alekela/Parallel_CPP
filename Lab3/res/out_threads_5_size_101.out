@@ -1,8 +1,8 @@
 Thread number 0: start: 0, stop: 20
-Thread number 1: start: 20, stop: 40
+Thread number 2: start: 40, stop: 60
 Thread number 3: start: 60, stop: 80
 Thread number 4: start: 80, stop: 101
-Thread number 2: start: 40, stop: 60
+Thread number 1: start: 20, stop: 40
 0	0	0
 0.1	0	0
 0.2	0	0
@@ -104,4 +104,4 @@ Thread number 2: start: 40, stop: 60
 9.8	0	0
 9.9	0	0
 10	0	0
-Time of working: 0.00136507
+Time of working: 0.000638176
