@@ -2,19 +2,19 @@ import os
 from time import sleep
 import matplotlib.pyplot as plt
 
-sizes = [1001, 100001]
+sizes = [101, 10001]
 Ns = list(range(1, 9))
 times = {}
 
 plt.figure()
-legend = ["ideal"] + [f"real N={size}" for size in sizes]
+legend = ["ideal"] + [f"real h={1 / (size - 1)}" for size in sizes]
 plt.xlabel("Threads num")
 plt.ylabel("T0/T")
 plt.plot(range(1, max(Ns) + 1), range(1, max(Ns) + 1))
 plt.title("Speed up")
 plt.grid()
 
-option = ''
+option = 'threads'
 
 for size in sizes:
 	times[size] = []

@@ -23,9 +23,6 @@ void solve(std::vector<double>& u, double fict_cell, int start, int stop, double
 		if (i == start) {
 			u[i] -= tau * c / h * (u[i] - fict_cell);
 		}
-		else if (i == stop - 1) {
-			u[i] -= tau * c / h * (u[i] - prev_cell);
-		}
 		else {
 			u[i] -= tau * c / h * (u[i] - prev_cell);
 		}
@@ -104,6 +101,7 @@ int main(int argc, char*argv[]) {
 			if (rank != 0) {
 				fict_cell = u[start - 1];
 			}
+			#pragma omp barrier
 			solve(u, fict_cell, start, stop, c, h, tau);
 			t_start += tau;
 			#pragma omp barrier
