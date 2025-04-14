@@ -2,7 +2,7 @@
 
 name="Lab3"
 g++ $name.cpp -o $name -fopenmp
-for N in 101 10001; do
+for N in 1001 100001; do
 	for p in {1..8}; do
 		./$name $p $N >> res/out_threads_${p}_size_${N}.out
 	done

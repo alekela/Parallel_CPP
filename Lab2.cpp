@@ -26,20 +26,19 @@ void solve(std::vector<double>* T, int size, double k, double h, double tau) {
 }
 
 
-void sending_p(std::vector<double>* T, int n, int rank, int size, MPI_Status* Status, MPI_Request* Request) {
+void sending_p(std::vector<double>* T, int n, int rank, int size, MPI_Status* Status) {
 	if (rank != size - 1) {
-		MPI_Isend(&((*T)[n]), 1, MPI_DOUBLE, rank +1, rank +1, MPI_COMM_WORLD, Request);
+		MPI_Send(&((*T)[n]), 1, MPI_DOUBLE, rank +1, rank +1, MPI_COMM_WORLD);
 	}
 	if (rank != 0) {
-		MPI_Irecv(&((*T)[0]), 1, MPI_DOUBLE, rank -1, rank , MPI_COMM_WORLD, Request);
+		MPI_Recv(&((*T)[0]), 1, MPI_DOUBLE, rank -1, rank , MPI_COMM_WORLD, Status);
 	}
 	if (rank != 0) {
-		MPI_Isend(&((*T)[1]), 1, MPI_DOUBLE, rank -1, rank -1, MPI_COMM_WORLD, Request);
+		MPI_Send(&((*T)[1]), 1, MPI_DOUBLE, rank -1, rank -1, MPI_COMM_WORLD);
 	}
 	if (rank != size - 1) {
-		MPI_Irecv(&((*T)[n + 1]), 1, MPI_DOUBLE, rank +1, rank , MPI_COMM_WORLD, Request);
+		MPI_Recv(&((*T)[n + 1]), 1, MPI_DOUBLE, rank +1, rank , MPI_COMM_WORLD, Status);
 	}
-	MPI_Wait(Request, Status);
 }
 
 
@@ -79,7 +78,7 @@ int main(int argc, char* argv[]) {
 	}
 	double k = 1;
 	double tstart = 0;
-	double tend = 0.001;
+	double tend = 0.02;
 	double h = 1. / (N + 1);
 
 	double tau = 0.5 * h * h / k;
@@ -107,7 +106,9 @@ int main(int argc, char* argv[]) {
 		T0[N + 1] = uright;
 		for (int i = 0; i < Nt; i++) {
 			solve(&T0, N + 2, k, h, tau);
+			tstart += tau;
 		}
+		std::cout << "End time: " << tstart << std::endl;
 		std::cout << "One proc time: " << MPI_Wtime() - onetime << "\n";
 		int index = 0;
 		std::cout << "T_chisl: ";
@@ -168,7 +169,7 @@ int main(int argc, char* argv[]) {
 		if (rank == size - 1) {
 			T[stop - start + 1] = uright;
 		}
-		sending_1(&T, stop - start, rank, size, &Status);
+		sending_p(&T, stop - start, rank, size, &Status);
 
 		solve(&T, stop - start + 2, k, h, tau);
 	}
@@ -181,7 +182,8 @@ int main(int argc, char* argv[]) {
 	
 	if (rank == 0) {
 		std::cout << "Parallel results:" << std::endl;
-				
+		std::cout << "End time: " << tau * Nt << std::endl;
+
 		int counter = 0;
 		int ind_count = 0;
 		int indexes[11];
