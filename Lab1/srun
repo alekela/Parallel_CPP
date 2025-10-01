@@ -1,5 +1,0 @@
-#!/bin/bash
-
-NAME="Lab2"
-mpiCC $NAME.cpp -o $NAME
-mpirun -np 3 $NAME

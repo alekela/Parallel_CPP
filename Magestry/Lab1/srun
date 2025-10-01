@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=4
+#SBATCH --job-name=ParCPP
+#SBATCH --time=10:00:00
+#SBATCH --output=out_p_4_N_128.out
+
+NAME="Lab1"
+mpiCC $NAME.cpp -o $NAME
+mpirun $NAME 128
