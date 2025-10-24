@@ -1,9 +1,0 @@
-I am proc0 x_coord: 0.005000 y_coord: 0.005000 u_theory: 0.500021 v_theory: 0.999979 u_exp: 0.500021 v_exp: 0.999979
-I am proc1 x_coord: 0.335000 y_coord: 0.005000 u_theory: 0.500000 v_theory: 1.000000 u_exp: 0.500000 v_exp: 1.000000
-I am proc2 x_coord: 0.665000 y_coord: 0.005000 u_theory: 0.500000 v_theory: 1.000000 u_exp: 0.500000 v_exp: 1.000000
-I am proc3 x_coord: 0.005000 y_coord: 0.335000 u_theory: 0.501301 v_theory: 0.998699 u_exp: 0.501301 v_exp: 0.998699
-I am proc4 x_coord: 0.335000 y_coord: 0.335000 u_theory: 0.500021 v_theory: 0.999979 u_exp: 0.500021 v_exp: 0.999979
-I am proc6 x_coord: 0.005000 y_coord: 0.665000 u_theory: 0.561127 v_theory: 0.938873 u_exp: 0.561127 v_exp: 0.938873
-I am proc7 x_coord: 0.335000 y_coord: 0.665000 u_theory: 0.501301 v_theory: 0.998699 u_exp: 0.501292 v_exp: 0.998708
-I am proc8 x_coord: 0.665000 y_coord: 0.665000 u_theory: 0.500021 v_theory: 0.999979 u_exp: 0.500021 v_exp: 0.999979
-I am proc5 x_coord: 0.665000 y_coord: 0.335000 u_theory: 0.500000 v_theory: 1.000000 u_exp: 0.500000 v_exp: 1.000000

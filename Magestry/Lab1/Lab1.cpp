@@ -37,187 +37,163 @@ void InitialState(std::vector<std::vector<double>>& u, std::vector<std::vector<d
 
 void Boundary(std::vector<std::vector<double>>& u, std::vector<std::vector<double>>& v, double time, double Re, double dx, double dy,
 					int start_x, int stop_x, int start_y, int stop_y, 
-					int fict, int rank_x, int rank_y, int px, int py, MPI_Status* Status) {
-	int neighbors[4];
-	neighbors[2] = rank_y == 0 ? -1 : px * (rank_y - 1) + rank_x;
-	neighbors[1] = rank_x == 0 ? -1 : px * rank_y + rank_x - 1;
-	neighbors[0] = rank_y == py - 1 ? -1 : px * (rank_y + 1) + rank_x;
-	neighbors[3] = rank_x == px - 1 ? -1 : px * rank_y + rank_x + 1;
+					int fict, int rank_x, int rank_y, int px, int py, MPI_Status* Status, int neighbors[], int xy_flag) {
+	// y sending
+	if (xy_flag == 2 || xy_flag == 0) {
+		std::vector<double> buffer_x1_send((stop_x - start_x) * fict * 2);
+		std::vector<double> buffer_x2_send((stop_x - start_x) * fict * 2);
+		std::vector<double> buffer_x1_recv((stop_x - start_x) * fict * 2);
+		std::vector<double> buffer_x2_recv((stop_x - start_x) * fict * 2);
 
-	// std::string message = "Rank: " + std::to_string(px * rank_y + rank_x) + " ";
-	// for (int i = 0; i < 4; i++) {
-	// 	message += std::to_string(neighbors[i]) + " ";
-	// }
-	// std::cout << message << std::endl;
-
-	std::vector<double> buffer_x1_send((stop_x - start_x) * fict * 2);
-	std::vector<double> buffer_x2_send((stop_x - start_x) * fict * 2);
-	std::vector<double> buffer_y1_send((stop_y - start_y) * fict * 2);
-	std::vector<double> buffer_y2_send((stop_y - start_y) * fict * 2);
-
-	std::vector<double> buffer_x1_recv((stop_x - start_x) * fict * 2);
-	std::vector<double> buffer_x2_recv((stop_x - start_x) * fict * 2);
-	std::vector<double> buffer_y1_recv((stop_y - start_y) * fict * 2);
-	std::vector<double> buffer_y2_recv((stop_y - start_y) * fict * 2);
-
-	if (neighbors[0] != -1) {
-		for (int i = stop_y - start_y; i < stop_y - start_y + fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				buffer_x1_send[(i - stop_y + start_y) * (stop_x - start_x) + j - fict] = u[i][j];
-				buffer_x1_send[(stop_x - start_x) * fict + ((i - stop_y + start_y) * (stop_x - start_x) + j - fict)] = v[i][j];
+		if (neighbors[0] != -1) {
+			for (int i = stop_y - start_y; i < stop_y - start_y + fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					buffer_x1_send[(i - stop_y + start_y) * (stop_x - start_x) + j - fict] = u[i][j];
+					buffer_x1_send[(stop_x - start_x) * fict + ((i - stop_y + start_y) * (stop_x - start_x) + j - fict)] = v[i][j];
+				}
 			}
 		}
-	}
-	else {
-		for (int i = stop_y - start_y; i < stop_y - start_y + fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
-				v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+		else {
+			for (int i = stop_y - start_y; i < stop_y - start_y + fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+					v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+				}
 			}
 		}
-	}
 
-	// std::cout << "first send" << std::endl;
-	
-	if (neighbors[1] != -1) {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = fict; j < fict + fict; j++) {
-				buffer_y1_send[(i - fict) * fict + j - fict] = u[i][j];
-				buffer_y1_send[(stop_y - start_y) * fict + ((i - fict) * fict + j - fict)] = v[i][j];
-			}	
-		}
-	}
-	else {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = fict; j < fict + fict; j++) {
-				u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
-				v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
-			}	
-		}
-	}
-
-
-	// std::cout << "second send" << std::endl;
-	
-	if (neighbors[2] != -1) {
-		for (int i = fict; i < fict + fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				buffer_x2_send[(i - fict) * (stop_x - start_x) + j - fict] = u[i][j];
-				buffer_x2_send[(stop_x - start_x) * fict + ((i - fict) * (stop_x - start_x) + j - fict)] = v[i][j];
+		if (neighbors[2] != -1) {
+			for (int i = fict; i < fict + fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					buffer_x2_send[(i - fict) * (stop_x - start_x) + j - fict] = u[i][j];
+					buffer_x2_send[(stop_x - start_x) * fict + ((i - fict) * (stop_x - start_x) + j - fict)] = v[i][j];
+				}
 			}
 		}
-	}
-	else {
-		for (int i = fict; i < fict + fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
-				v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+		else {
+			for (int i = fict; i < fict + fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+					v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+				}
 			}
 		}
-	}
 
-	// std::cout << "third send" << std::endl;
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (rank_y != py - 1) {
+			MPI_Send(buffer_x1_send.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[0], 0, MPI_COMM_WORLD); // up
+		}
+		if (rank_y != 0) {
+			MPI_Recv(buffer_x2_recv.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[2], 0, MPI_COMM_WORLD, Status); // down
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
-	if (neighbors[3] != -1) {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = stop_x - start_x; j < stop_x - start_x + fict; j++) {
-				buffer_y2_send[(i - fict) * fict + j - stop_x + start_x] = u[i][j];
-				buffer_y2_send[(stop_y - start_y) * fict + ((i - fict) * fict + j - stop_x + start_x)] = v[i][j];
+		if (rank_y != 0) {
+			MPI_Send(buffer_x2_send.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[2], 2, MPI_COMM_WORLD); // down
+		}
+		if (rank_y != py - 1) {
+			MPI_Recv(buffer_x1_recv.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[0], 2, MPI_COMM_WORLD, Status); // up
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		if (neighbors[0] != -1) {
+			for (int i = stop_y - start_y + fict; i < stop_y - start_y + fict + fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					u[i][j] = buffer_x1_recv[(i - stop_y + start_y - fict) * (stop_x - start_x) + j - fict];
+					v[i][j] = buffer_x1_recv[(stop_x - start_x) * fict + ((i - stop_y + start_y - fict) * (stop_x - start_x) + j - fict)];
+				}
 			}
 		}
-	}
-	else {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = stop_x - start_x; j < stop_x - start_x + fict; j++) {
-				u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
-				v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+
+		if (neighbors[2] != -1) {
+			for (int i = 0; i < fict; i++) {
+				for (int j = fict; j < stop_x - start_x + fict; j++) {
+					u[i][j] = buffer_x2_recv[i * (stop_x - start_x) + j - fict];
+					v[i][j] = buffer_x2_recv[(stop_x - start_x) * fict + (i * (stop_x - start_x) + j - fict)];
+				}
 			}
 		}
 	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
-	if (rank_x != px - 1) {
-		MPI_Send(buffer_y2_send.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[3], 3, MPI_COMM_WORLD); // right
-	}
-	if (rank_x != 0) {
-		MPI_Recv(buffer_y1_recv.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[1], 3, MPI_COMM_WORLD, Status); // left
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	// x sending
+	if (xy_flag == 1 || xy_flag == 0) {
+		std::vector<double> buffer_y1_send((stop_y - start_y) * fict * 2);
+		std::vector<double> buffer_y2_send((stop_y - start_y) * fict * 2);
+		std::vector<double> buffer_y1_recv((stop_y - start_y) * fict * 2);
+		std::vector<double> buffer_y2_recv((stop_y - start_y) * fict * 2);
 
-	if (rank_x != 0) {
-		MPI_Send(buffer_y1_send.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[1], 1, MPI_COMM_WORLD); // left
-	}
-	if (rank_x != px - 1) {
-		MPI_Recv(buffer_y2_recv.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[3], 1, MPI_COMM_WORLD, Status); // right
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+		if (neighbors[1] != -1) {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = fict; j < fict + fict; j++) {
+					buffer_y1_send[(i - fict) * fict + j - fict] = u[i][j];
+					buffer_y1_send[(stop_y - start_y) * fict + ((i - fict) * fict + j - fict)] = v[i][j];
+				}	
+			}
+		}
+		else {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = fict; j < fict + fict; j++) {
+					u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+					v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+				}	
+			}
+		}
+		if (neighbors[3] != -1) {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = stop_x - start_x; j < stop_x - start_x + fict; j++) {
+					buffer_y2_send[(i - fict) * fict + j - stop_x + start_x] = u[i][j];
+					buffer_y2_send[(stop_y - start_y) * fict + ((i - fict) * fict + j - stop_x + start_x)] = v[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = stop_x - start_x; j < stop_x - start_x + fict; j++) {
+					u[i][j] = u_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+					v[i][j] = v_theory((start_x + j - fict) * dx + dx / 2., (start_y + i - fict) * dy + dy / 2., time, Re);
+				}
+			}
+		}
 
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (rank_x != px - 1) {
+			MPI_Send(buffer_y2_send.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[3], 3, MPI_COMM_WORLD); // right
+		}
+		if (rank_x != 0) {
+			MPI_Recv(buffer_y1_recv.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[1], 3, MPI_COMM_WORLD, Status); // left
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
-	if (rank_y != py - 1) {
-		MPI_Send(buffer_x1_send.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[0], 0, MPI_COMM_WORLD); // up
-	}
-	if (rank_y != 0) {
-		MPI_Recv(buffer_x2_recv.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[2], 0, MPI_COMM_WORLD, Status); // down
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+		if (rank_x != 0) {
+			MPI_Send(buffer_y1_send.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[1], 1, MPI_COMM_WORLD); // left
+		}
+		if (rank_x != px - 1) {
+			MPI_Recv(buffer_y2_recv.data(), (stop_y - start_y) * fict * 2, MPI_DOUBLE, neighbors[3], 1, MPI_COMM_WORLD, Status); // right
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
-	if (rank_y != 0) {
-		MPI_Send(buffer_x2_send.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[2], 2, MPI_COMM_WORLD); // down
-	}
-	if (rank_y != py - 1) {
-		MPI_Recv(buffer_x1_recv.data(), (stop_x - start_x) * fict * 2, MPI_DOUBLE, neighbors[0], 2, MPI_COMM_WORLD, Status); // up
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+		if (neighbors[1] != -1) {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = 0; j < fict; j++) {
+					u[i][j] = buffer_y1_recv[(i - fict) * fict + j];
+					v[i][j] = buffer_y1_recv[(stop_y - start_y) * fict + ((i - fict) * fict + j)];
+				}	
+			}
+		}
 
-
-	
-	// std::cout << "fourth send" << std::endl;
-	
-	if (neighbors[0] != -1) {
-		for (int i = stop_y - start_y + fict; i < stop_y - start_y + fict + fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				u[i][j] = buffer_x1_recv[(i - stop_y + start_y - fict) * (stop_x - start_x) + j - fict];
-				v[i][j] = buffer_x1_recv[(stop_x - start_x) * fict + ((i - stop_y + start_y - fict) * (stop_x - start_x) + j - fict)];
+		if (neighbors[3] != -1) {
+			for (int i = fict; i < stop_y - start_y + fict; i++) {
+				for (int j = stop_x - start_x + fict; j < stop_x - start_x + fict + fict; j++) {
+					u[i][j] = buffer_y2_recv[(i - fict) * fict + j - stop_x + start_x - fict];
+					v[i][j] = buffer_y2_recv[(stop_y - start_y) * fict + ((i - fict) * fict + j - stop_x + start_x - fict)];
+				}
 			}
 		}
 	}
-
-	
-	// std::cout << "first recv" << std::endl;
-	
-	if (neighbors[1] != -1) {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = 0; j < fict; j++) {
-				u[i][j] = buffer_y1_recv[(i - fict) * fict + j];
-				v[i][j] = buffer_y1_recv[(stop_y - start_y) * fict + ((i - fict) * fict + j)];
-			}	
-		}
-	}
-
-	// std::cout << "second recv" << std::endl;
-	
-	if (neighbors[2] != -1) {
-		for (int i = 0; i < fict; i++) {
-			for (int j = fict; j < stop_x - start_x + fict; j++) {
-				u[i][j] = buffer_x2_recv[i * (stop_x - start_x) + j - fict];
-				v[i][j] = buffer_x2_recv[(stop_x - start_x) * fict + (i * (stop_x - start_x) + j - fict)];
-			}
-		}
-	}
-
-	// std::cout << "third recv" << std::endl;
-
-	if (neighbors[3] != -1) {
-		for (int i = fict; i < stop_y - start_y + fict; i++) {
-			for (int j = stop_x - start_x + fict; j < stop_x - start_x + fict + fict; j++) {
-				u[i][j] = buffer_y2_recv[(i - fict) * fict + j - stop_x + start_x - fict];
-				v[i][j] = buffer_y2_recv[(stop_y - start_y) * fict + ((i - fict) * fict + j - stop_x + start_x - fict)];
-			}
-		}
-	}
-
-	// std::cout << "fourth recv" << std::endl;
 }
+
+
+void progonka() {}
 
 
 void write_data_parallel(std::vector<std::vector<double>> u, std::vector<std::vector<double>> v, double time, double Re, double dx, double dy,
@@ -319,6 +295,12 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	int neighbors[4];
+	neighbors[2] = rank_y == 0 ? -1 : px * (rank_y - 1) + rank_x;
+	neighbors[1] = rank_x == 0 ? -1 : px * rank_y + rank_x - 1;
+	neighbors[0] = rank_y == py - 1 ? -1 : px * (rank_y + 1) + rank_x;
+	neighbors[3] = rank_x == px - 1 ? -1 : px * rank_y + rank_x + 1;
+
 	// message = "Rank " + std::to_string(rank) + " start_x: " + std::to_string(start_x) + " stop_x: " + std::to_string(stop_x) + " start_y: " + std::to_string(start_y) + + " stop_y: " + std::to_string(stop_y);
 	// std::cout << message << std::endl;
 
@@ -327,12 +309,11 @@ int main(int argc, char* argv[]) {
 	std::vector<std::vector<double>> v(stop_y - start_y + 2 * fict, std::vector<double>(stop_x - start_x + 2 * fict));
 	std::vector<std::vector<double>> new_u(stop_y - start_y + 2 * fict, std::vector<double>(stop_x - start_x + 2 * fict));
 	std::vector<std::vector<double>> new_v(stop_y - start_y + 2 * fict, std::vector<double>(stop_x - start_x + 2 * fict));
-	
+	std::vector<std::vector<double>> tmp_u(stop_y - start_y + 2 * fict, std::vector<double>(stop_x - start_x + 2 * fict));
+	std::vector<std::vector<double>> tmp_v(stop_y - start_y + 2 * fict, std::vector<double>(stop_x - start_x + 2 * fict));
+
 	InitialState(u, v, start_x, stop_x, start_y, stop_y, fict, dx, dy, Re);
 	double tmp_Re_part = 0;
-
-	// message = "Rank " + std::to_string(rank) + " done initializing";
-	// std::cout << message << std::endl;
 
 	int iter = 1;
 	write_data_parallel(u, v, t_start, Re, dx, dy, start_x, stop_x, start_y, stop_y, fict, rank_x, rank_y, filename);
@@ -356,15 +337,11 @@ int main(int argc, char* argv[]) {
 		t_start += dt;
 		// message = "Rank_x " + std::to_string(rank_x) + " rank_y " + std::to_string(rank_y) + " reached boundary";
 		// std::cout << message << std::endl;
-		Boundary(u, v, t_start, Re, dx, dy, start_x, stop_x, start_y, stop_y, fict, rank_x, rank_y, px, py, &Status);
-		MPI_Barrier(MPI_COMM_WORLD);
 
-		//message = "";
-		//message += "I am proc" + std::to_string(rank) + " time: " + std::to_string(t_start);
-		//message += " x_coord: " + std::to_string(start_x * dx + dx / 2.) + " y_coord: " + std::to_string(start_y * dx + dx / 2.);
-		//message += " u_theory: " + std::to_string(u_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re)) + " v_theory: " + std::to_string(v_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re));
-		//message += " u_exp: " + std::to_string(u[fict][fict]) + " v_exp: " + std::to_string(v[fict][fict]);
-		//std::cout << message << std::endl;
+		int xy_flag = 0; // 0 - all, 1 - x, 2 - y
+		Boundary(u, v, t_start, Re, dx, dy, start_x, stop_x, start_y, stop_y, fict, rank_x, rank_y, px, py, &Status, neighbors, 0);
+		// Boundary(u, v, t_start, Re, dx, dy, start_x, stop_x, start_y, stop_y, fict, rank_x, rank_y, px, py, &Status, neighbors, 2);
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		if (iter % iterwrite == 0 || t_start == t_end) {
 			write_data_parallel(u, v, t_start, Re, dx, dy, start_x, stop_x, start_y, stop_y, fict, rank_x, rank_y, filename);
@@ -372,12 +349,12 @@ int main(int argc, char* argv[]) {
 		iter++;
 	}
 
-	// message = "";
-	// message += "I am proc" + std::to_string(rank);
-	// message += " x_coord: " + std::to_string(start_x * dx + dx / 2.) + " y_coord: " + std::to_string(start_y * dx + dx / 2.);
-	// message += " u_theory: " + std::to_string(u_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re)) + " v_theory: " + std::to_string(v_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re));
-	// message += " u_exp: " + std::to_string(u[fict][fict]) + " v_exp: " + std::to_string(v[fict][fict]);
-	// std::cout << message << std::endl;
+	message = "";
+	message += "I am proc" + std::to_string(rank);
+	message += " x_coord: " + std::to_string(start_x * dx + dx / 2.) + " y_coord: " + std::to_string(start_y * dx + dx / 2.);
+	message += " u_theory: " + std::to_string(u_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re)) + " v_theory: " + std::to_string(v_theory(start_x * dx + dx / 2., start_y * dx + dx / 2., t_start, Re));
+	message += " u_exp: " + std::to_string(u[fict][fict]) + " v_exp: " + std::to_string(v[fict][fict]);
+	std::cout << message << std::endl;
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) {
 		std::cout << "\nTime of working: " << MPI_Wtime() - manytime << "\n";
