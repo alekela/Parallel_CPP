@@ -232,8 +232,9 @@ void write_data_parallel(std::vector<std::vector<double>> u, std::vector<std::ve
 
     int offset = 0;
     MPI_Exscan(&local_size, &offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	std::cout << offset << '\n';
     MPI_File fh;
-    MPI_File_open(MPI_COMM_WORLD, outpath.c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    MPI_File_open(MPI_COMM_WORLD, outpath.c_str(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
     MPI_File_write_at_all(fh, offset, local_data.c_str(), local_size, MPI_CHAR, MPI_STATUS_IGNORE);
     MPI_File_close(&fh);
 }
