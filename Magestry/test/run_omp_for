@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=20
+#SBATCH --time=5:00:00
+#SBATCH --output=out_omp_for_1_thread
+#SBATCH --nodelist=c4n6
+
+
+NAME="omp_for"
+mpic++ -o $NAME $NAME.cpp -fopenmp
+export OMP_NUM_THREADS=12
+numactl --cpunodebind=0 --membind=0 srun --mpi pmix $NAME
